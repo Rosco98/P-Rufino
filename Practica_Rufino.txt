@@ -8,9 +8,10 @@
 #define RANGO_MAX 100
 #define RANGO_MIN 0
 #define SG_ESPERA_S 1
-#define SG_ESPERA_L 2
+#define SG_ESPERA_M 2
+#define SG_ESPERA_L 4
 
-
+#define directorio_fichero "C:\\Users\\jorg_\\Desktop\\herramientas2.txt"
 
 
 struct Herramienta {
@@ -28,7 +29,7 @@ int main(void) {
 
 	//Leer herramientas
 
-	FILE *f1 = fopen("C:\\Users\\jorg_\\Desktop\\herramientas.sav", "r");
+	FILE *f1 = fopen(directorio_fichero, "r");
 
 	if (f1 == NULL){
 		perror("Error de apertura de fichero");
@@ -52,6 +53,9 @@ int main(void) {
 	cont=0;
 	n=0;
 	while(fscanf (f1, "%[a-z0-9];%d;%[a-z0-9]\n", cadena1, &valor, cadena2) != NULL){
+		if(!(cont<MAX_H)){
+			break;
+		}
 		if (cont != 0){
 
 			for(int w=0;w<MAX_C1;w++){
@@ -70,9 +74,14 @@ int main(void) {
 		strcpy(herramientas[cont].descripcion, cadena2);
 
 		if(valor>RANGO_MAX || valor<RANGO_MIN){
-			printf("\n\t----------------------------------------------");
-			printf("\n\t| ERROR EN LOS VALORES DE \"herramientas.txt\" |");
-			printf("\n\t----------------------------------------------\n\n");
+
+			char aviso[]="\n\t| ERROR EN LOS VALORES DE ";
+			strcat(aviso,directorio_fichero);
+			strcat(aviso," |");
+
+			printf("\n\t--------------------------------------------------------------------");
+			printf(aviso);
+			printf("\n\t--------------------------------------------------------------------\n\n");
 			sleep(SG_ESPERA_L);
 			return 0;
 		}
@@ -82,8 +91,8 @@ int main(void) {
 			printf("\n\t---------------------------------");
 			printf("\n\t| EXISTEN HERRAMIENTAS GASTADAS |");
 			printf("\n\t---------------------------------\n\n");
-			sleep(SG_ESPERA_L);
-}
+			sleep(SG_ESPERA_M);
+		}
 		////////////////////////////////////
 		cont++;
 		for(int j=0;j<MAX_C1;j++){
@@ -93,7 +102,7 @@ int main(void) {
 			cadena2[j] = '\0';
 		}
 	}
-
+	//cont--;
 	fclose(f1);
 
 
@@ -147,6 +156,14 @@ printf( "\n\n   Introduzca opcion (1-6): ");
 
             case 2: //FUNCIONA
 
+
+            	if(!(cont<MAX_H)){
+            		printf( "\n\t  Numero maximo de herramientas alcanzado\n");
+            		printf("\t-------------------------------------------------\n\n");
+            		sleep(SG_ESPERA_S);
+            		break;
+            	}
+
             	for(int j=0;j<MAX_C1;j++){
             		cadena1[j] = '\0';
             	}
@@ -160,6 +177,8 @@ printf( "\n\n   Introduzca opcion (1-6): ");
 
             	printf( "\n   Introduzca el numero de serie de la herramienta que desea anadir: ");
                 scanf( "%s", cadena1 );
+
+            	//strcpy(cadena1,"prueba");
 
 
                 for (int i=0; i<MAX_H; i++){
@@ -186,7 +205,9 @@ printf( "\n\n   Introduzca opcion (1-6): ");
                 printf( "\n   Introduzca el nivel de desgaste de la herramienta, nueva(100)---gastada(0): ");
                 scanf( "%d", &valor );
 
-        		while(valor>RANGO_MAX || valor<RANGO_MIN){
+
+
+        		while((valor>RANGO_MAX || valor<RANGO_MIN) || (sizeof(int) != sizeof(valor))){
         			printf("\n\tValor incorrecto\n");
         			sleep(SG_ESPERA_S);
                     printf( "\n   Introduzca el nivel de desgaste de la herramienta, nueva(100)---gastada(0): ");
@@ -217,7 +238,7 @@ printf( "\n\n   Introduzca opcion (1-6): ");
 
 
 
-
+            //Eliminar herramienta
 
             case 3:
 
@@ -228,9 +249,10 @@ printf( "\n\n   Introduzca opcion (1-6): ");
             	printf( "\n   Introduzca el numero de serie de la herramienta que desea eliminar: ");
                 scanf( "%s", cadena1 );
 
-            	//strcpy(herramientas[0].num_serie, cadena1);
+            	//strcpy(cadena1,herramientas[10].num_serie);
 
             	boolean=1;
+            	int pos=MAX_H;
 
                 for (int i=0; i<MAX_H; i++){
                 	for(int w=0;w<MAX_C1;w++){
@@ -240,6 +262,7 @@ printf( "\n\n   Introduzca opcion (1-6): ");
                 	if(n == MAX_C1){
                 		boolean=0;
                 		n=0;
+                		pos=i;
                 		for(int j=0;j<MAX_C1;j++){
                 			herramientas[i].num_serie[j] = '\0';
                 		}
@@ -252,13 +275,30 @@ printf( "\n\n   Introduzca opcion (1-6): ");
                 	}
                 	n=0;
                 }
+                ///////Mover todas una posicion menos//////
+                for(int i=pos; i<MAX_H-1; i++){
+                	strcpy(herramientas[i].num_serie, herramientas[i+1].num_serie);
+                	herramientas[i].nivel_desgaste = herramientas[i+1].nivel_desgaste;
+                	strcpy(herramientas[i].descripcion, herramientas[i+1].descripcion);
+                }
+                //////Eliminamos los datos de la ultima posicion///////
+                for(int j=0;j<MAX_C1;j++){
+                	herramientas[MAX_H-1].num_serie[j] = '\0';
+                }
+                herramientas[MAX_H-1].nivel_desgaste = 0;
+
+                for(int j=0;j<MAX_C2;j++){
+                	herramientas[MAX_H-1].descripcion[j] = '\0';
+                }
+
+                ////////////////////////////////////
                 if(boolean){
                 	printf( "\n  No se ha encontrado ninguna herramienta con ese numero de serie\n");
                 	printf("  --------------------------------------------------------------------\n\n");
                 	sleep(SG_ESPERA_S);
                 	break;
                 }else{
-
+                	cont--;
                 	printf( "\n\t  Herramienta eliminada correctamente \n ");
                 	printf("\t----------------------------------------------");
                 	sleep(SG_ESPERA_S);
@@ -309,7 +349,7 @@ printf( "\n\n   Introduzca opcion (1-6): ");
                 		printf( "\n   Introduzca el nivel de desgaste de la herramienta, nueva(100)---gastada(0): ");
                 		scanf( "%d", &valor );
 
-                		while(valor>RANGO_MAX || valor<RANGO_MIN){
+                		while((valor>RANGO_MAX || valor<RANGO_MIN) || (sizeof(int) != sizeof(valor))){
                 			printf("\n\tValor incorrecto\n");
                 			printf( "\n   Introduzca el nivel de desgaste de la herramienta, nueva(100)---gastada(0): ");
                 			scanf( "%d", &valor );
@@ -350,7 +390,7 @@ printf( "\n\n   Introduzca opcion (1-6): ");
                 printf( "\n   Introduzca el nivel de desgaste limite, nueva(100)---gastada(0): ");
                 scanf( "%d", &valor );
 
-                while(valor>RANGO_MAX || valor<RANGO_MIN){
+                while((valor>RANGO_MAX || valor<RANGO_MIN) || (sizeof(int) != sizeof(valor))){
                 	printf("\n\tValor incorrecto\n");
                 	sleep(SG_ESPERA_S);
                     printf( "\n   Introduzca el nivel de desgaste limite, nueva(100)---gastada(0): ");
@@ -404,9 +444,9 @@ printf( "\n\n   Introduzca opcion (1-6): ");
 
     } while ( opcion != 6 );
 
-	FILE *f2 = fopen("C:\\Users\\jorg_\\Desktop\\herramientas.sav", "w");
+	FILE *f2 = fopen(directorio_fichero, "w");
 
-	char str[100];
+	char str[MAX_C2];
 	for(int i=0; i<MAX_H;i++){
 		for(int w=0;w<MAX_C1;w++){
 			if(herramientas[i].num_serie[w] != '\0')
