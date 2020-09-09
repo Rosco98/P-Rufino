@@ -2,16 +2,25 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_H 12
+#define MAX_H 100
 #define MAX_C1 50
 #define MAX_C2 200
+#define MAX_DIR 200
 #define RANGO_MAX 100
 #define RANGO_MIN 0
 #define SG_ESPERA_S 1
 #define SG_ESPERA_M 2
 #define SG_ESPERA_L 4
 
-#define directorio_fichero "C:\\Users\\jorg_\\Desktop\\herramientas2.txt"
+#define nombre_fichero "herramientas.sav"
+
+
+#ifdef __unix__
+	#define UNIX 1
+#else
+    #define UNIX 0
+#endif
+
 
 
 struct Herramienta {
@@ -26,15 +35,37 @@ int main(void) {
 
 	struct Herramienta herramientas[MAX_H]={0};
 
+	//Ubicacion fichero//
+	char directorio_fichero[MAX_DIR]={0};
 
-	//Leer herramientas
+	if(UNIX){
+		strcpy(directorio_fichero,strcat(strcat(getenv("PWD"),"\\"),nombre_fichero));
+	}else{
+		FILE *f3 = fopen("auxi.txt", "w");
+		fclose(f3);
+		system("echo %cd% > auxi.txt");
 
-	FILE *f1 = fopen(directorio_fichero, "r");
+		f3 = fopen("auxi.txt", "r");
 
-	if (f1 == NULL){
-		perror("Error de apertura de fichero");
-		return -1;
+		while (fgets(directorio_fichero, MAX_DIR, f3) != NULL){
+			fputs(directorio_fichero, f3);
+		}
+		fclose(f3);
+		system("del auxi.txt");
+
+		for(int i=MAX_DIR-1;i>0;i--){
+			if(directorio_fichero[i] == ' '){
+				directorio_fichero[i]= '\0';
+				break;
+			}
+			directorio_fichero[i]= '\0';
+		}
+
+		strcpy(directorio_fichero,strcat(strcat(directorio_fichero,"\\"),nombre_fichero));
+
+		//printf("%s",directorio_fichero);
 	}
+
 
 	char cadena1[MAX_C1];
 	char cadena2[MAX_C2];
@@ -52,7 +83,35 @@ int main(void) {
 
 	cont=0;
 	n=0;
-	while(fscanf (f1, "%[a-z0-9];%d;%[a-z0-9]\n", cadena1, &valor, cadena2) != NULL){
+
+	//Leer herramientas
+
+	FILE *f1 = fopen(directorio_fichero, "r");
+
+	if (f1 == NULL){
+		fclose(f1);
+		printf("\n\t--------------------------------");
+		printf("\n\t| ERROR DE APERTURA DE FICHERO |");
+		printf("\n\t--------------------------------\n\n");
+		printf("Revisa el fichero ubicado en: %s", directorio_fichero);
+		sleep(SG_ESPERA_M);
+		//return(-1);
+		perror("\t");
+
+		char nota[]="\n\t Se ha creado el fichero \"";
+		strcat(nota,nombre_fichero);
+		strcat(nota,"\"\n\n\n");
+		sleep(SG_ESPERA_M);
+		f1 = fopen(nombre_fichero, "w");
+		fputs("\0;\0;\0", f1);
+
+		goto inicioPrograma;
+		//Salta a etiqueta inicioPrograma
+		//return -1;
+	}
+
+
+	while(fscanf (f1, "%[a-z0-9A-Z-_];%d;%[a-z0-9A-Z-_]\n", cadena1, &valor, cadena2) != NULL){
 		if(!(cont<MAX_H)){
 			break;
 		}
@@ -72,6 +131,16 @@ int main(void) {
 		strcpy(herramientas[cont].num_serie, cadena1);
 		herramientas[cont].nivel_desgaste = valor;
 		strcpy(herramientas[cont].descripcion, cadena2);
+
+		n=0;
+		for(int j=0;j<MAX_C1;j++){
+			if(herramientas[0].num_serie[j] == '\0'){
+				n++;
+			}
+		}
+		if(n==MAX_C1){
+			goto inicioPrograma;
+		}
 
 		if(valor>RANGO_MAX || valor<RANGO_MIN){
 
@@ -103,13 +172,13 @@ int main(void) {
 		}
 	}
 	//cont--;
-	fclose(f1);
+	inicioPrograma: fclose(f1);
 
 
 /////////////////////////////////////////////////////////////////
 
 
-    int opcion;
+   int opcion;
 
     do
     {
@@ -127,6 +196,7 @@ printf( "\n\n   Introduzca opcion (1-6): ");
         switch (opcion){
 
             case 1:  //FUNCIONA
+            	n=0;
             	printf( "\n   Listado de las herramientas (numero de serie, nivel desgaste, descripcion): \n" );
             	printf( "------------------------------------------------------------------------------------\n" );
 
@@ -241,6 +311,7 @@ printf( "\n\n   Introduzca opcion (1-6): ");
             //Eliminar herramienta
 
             case 3:
+            	n=0;
 
             	for(int j=0;j<MAX_C1;j++){
             			cadena1[j] = '\0';
@@ -249,7 +320,7 @@ printf( "\n\n   Introduzca opcion (1-6): ");
             	printf( "\n   Introduzca el numero de serie de la herramienta que desea eliminar: ");
                 scanf( "%s", cadena1 );
 
-            	//strcpy(cadena1,herramientas[10].num_serie);
+            	//strcpy(cadena1,herramientas[0].num_serie);
 
             	boolean=1;
             	int pos=MAX_H;
@@ -277,6 +348,16 @@ printf( "\n\n   Introduzca opcion (1-6): ");
                 }
                 ///////Mover todas una posicion menos//////
                 for(int i=pos; i<MAX_H-1; i++){
+                	//Vacio posicion
+                	for(int j=0;j<MAX_C1;j++){
+                		herramientas[i].num_serie[j] = '\0';
+                	}
+                	herramientas[i].nivel_desgaste = 0;
+
+                	for(int j=0;j<MAX_C2;j++){
+                		herramientas[i].descripcion[j] = '\0';
+                	}
+                	//Muevo datos
                 	strcpy(herramientas[i].num_serie, herramientas[i+1].num_serie);
                 	herramientas[i].nivel_desgaste = herramientas[i+1].nivel_desgaste;
                 	strcpy(herramientas[i].descripcion, herramientas[i+1].descripcion);
@@ -470,4 +551,3 @@ printf( "\n\n   Introduzca opcion (1-6): ");
     return 0;
 
 }
-
